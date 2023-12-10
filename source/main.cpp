@@ -200,5 +200,22 @@ int main(){
         return res;
     });
 
+    CROW_ROUTE(app, "/validate_credentials").methods(crow::HTTPMethod::Get)([&db](const crow::request& req){
+        if(req.url_params.get("username") == nullptr
+        || req.url_params.get("password") == nullptr){
+            return crow::response(crow::status::BAD_REQUEST);
+        }
+
+        std::string username = req.url_params.get("username");
+        std::string password = req.url_params.get("password");
+
+        auto u = oxim::Users{};
+        auto rows = db(select(all_of(u)).from(u).where(u.username == username and u.password == password));
+        
+        if(!rows.empty())
+            return crow::response(crow::status::OK);
+        return crow::response(crow::status::UNAUTHORIZED);
+    });
+
     auto ret = app.port(18080).multithreaded().run_async();
 }
