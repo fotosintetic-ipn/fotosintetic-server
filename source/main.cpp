@@ -21,6 +21,7 @@ int main(){
     crow::SimpleApp app;
 
     CROW_ROUTE(app, "/submit").methods(crow::HTTPMethod::POST)([&db](const crow::request& req){
+        if(req.body == "") return crow::response(crow::status::BAD_REQUEST);
         auto body = nlohmann::json::parse(req.body);
         if(req.get_header_value("Authorization") == ""
         || !body.contains("heartRatePrecision")
@@ -28,8 +29,8 @@ int main(){
         || !body.contains("heartRateArray")
         || !body.contains("spo2Array")
         || !body.contains("sent")
-        || !body["heartRatePrecision"].is_number_float()
-        || !body["spo2Precision"].is_number_float()
+        || !body["heartRatePrecision"].is_number()
+        || !body["spo2Precision"].is_number()
         || !body["heartRateArray"].is_array()
         || !body["spo2Array"].is_array()
         || !body["sent"].is_string()){
@@ -127,64 +128,69 @@ int main(){
         auto vs = oxim::VitalSigns{};
         nlohmann::json response_body;
 
-        if(req.url_params.get("before") != nullptr){
-            auto result = db(select(all_of(vs))
-                            .from(vs)
-                            .where(vs.userId == id and vs.id < std::stoi(req.url_params.get("before")))
-                            .limit(limit)
-                            .order_by(vs.id.desc()));
-            int idx = 0;
+        try{
+            if(req.url_params.get("before") != nullptr){
+                auto result = db(select(all_of(vs))
+                                .from(vs)
+                                .where(vs.userId == id and vs.id < std::stoi(req.url_params.get("before")))
+                                .limit(limit)
+                                .order_by(vs.id.desc()));
+                int idx = 0;
 
-            response_body["user_id"] = static_cast<uint32_t>(result.front().userId);
-            response_body["data"] = nlohmann::json::array();
-            response_body["data"].push_back(nlohmann::json());
-            for(const auto& i: result){
-                response_body["data"][idx]["id"] = static_cast<uint32_t>(i.id);
-                response_body["data"][idx]["received"] = static_cast<std::string>(i.received);
-                
-                auto array = nlohmann::json::parse(static_cast<std::string>(i.heartrate));
-                response_body["data"][idx]["heartrate"] = nlohmann::json::array();
-                for(int it = 0; it != 10; it++)
-                    response_body["data"][idx]["heartrate"][it] = array[it];
-                array = nlohmann::json::parse(static_cast<std::string>(i.spo2));
-                response_body["data"][idx]["spo2"] = nlohmann::json::array();
-                for(int it = 0; it != 10; it++)
-                    response_body["data"][idx]["spo2"][it] = array[it];
+                response_body["data"] = nlohmann::json::array();
 
-                response_body["data"][idx]["heartrate_precision"] = static_cast<double>(i.heartratePrecision);
-                response_body["data"][idx]["spo2_precision"] = static_cast<double>(i.spo2_precision);
+                for(const auto& i: result){
+                    response_body["data"][idx]["id"] = static_cast<uint32_t>(i.id);
+                    response_body["data"][idx]["received"] = static_cast<std::string>(i.received);
+                    
+                    auto array = nlohmann::json::parse(static_cast<std::string>(i.heartrate));
+                    response_body["data"][idx]["heartrate"] = nlohmann::json::array();
+                    for(int it = 0; it != 10; it++)
+                        response_body["data"][idx]["heartrate"][it] = array[it];
+                    array = nlohmann::json::parse(static_cast<std::string>(i.spo2));
+                    response_body["data"][idx]["spo2"] = nlohmann::json::array();
+                    for(int it = 0; it != 10; it++)
+                        response_body["data"][idx]["spo2"][it] = array[it];
 
-                idx++;
+                    response_body["data"][idx]["heartrate_precision"] = static_cast<double>(i.heartratePrecision);
+                    response_body["data"][idx]["spo2_precision"] = static_cast<double>(i.spo2_precision);
+
+                    idx++;
+                }
+                std::reverse(response_body["data"].begin(), response_body["data"].end());
             }
-            std::reverse(response_body["data"].begin(), response_body["data"].end());
+            else{
+                auto result = db(select(all_of(vs))
+                                .from(vs)
+                                .where(vs.userId == id and vs.id > std::stoi(req.url_params.get("after")))
+                                .limit(limit)
+                                .order_by(vs.id.asc()));
+                int idx = 0;
+
+                response_body["data"] = nlohmann::json::array();
+
+                for(const auto& i: result){
+                    response_body["data"][idx]["id"] = static_cast<uint32_t>(i.id);
+                    response_body["data"][idx]["received"] = static_cast<std::string>(i.received);
+                    
+                    auto array = nlohmann::json::parse(static_cast<std::string>(i.heartrate));
+                    response_body["data"][idx]["heartrate"] = nlohmann::json::array();
+                    for(int it = 0; it != 10; it++)
+                        response_body["data"][idx]["heartrate"][it] = array[it];
+                    response_body["data"][idx]["spo2"] = nlohmann::json::array();
+                    array = nlohmann::json::parse(static_cast<std::string>(i.spo2));
+                    for(int it = 0; it != 10; it++)
+                        response_body["data"][idx]["spo2"][it] = array[it];
+
+                    response_body["data"][idx]["heartrate_precision"] = static_cast<double>(i.heartratePrecision);
+                    response_body["data"][idx]["spo2_precision"] = static_cast<double>(i.spo2_precision);
+
+                    idx++;
+                }   
+            }
         }
-        else{
-            auto result = db(select(all_of(vs))
-                            .from(vs)
-                            .where(vs.userId == id and vs.id > std::stoi(req.url_params.get("after")))
-                            .limit(limit)
-                            .order_by(vs.id.asc()));
-            int idx = 0;
-            response_body["user_id"] = static_cast<uint32_t>(result.front().userId);
+        catch(sqlpp::exception& e){
             response_body["data"] = nlohmann::json::array();
-            for(const auto& i: result){
-                response_body["data"][idx]["id"] = static_cast<uint32_t>(i.id);
-                response_body["data"][idx]["received"] = static_cast<std::string>(i.received);
-                
-                auto array = nlohmann::json::parse(static_cast<std::string>(i.heartrate));
-                response_body["data"][idx]["heartrate"] = nlohmann::json::array();
-                for(int it = 0; it != 10; it++)
-                    response_body["data"][idx]["heartrate"][it] = array[it];
-                response_body["data"][idx]["spo2"] = nlohmann::json::array();
-                array = nlohmann::json::parse(static_cast<std::string>(i.spo2));
-                for(int it = 0; it != 10; it++)
-                    response_body["data"][idx]["spo2"][it] = array[it];
-
-                response_body["data"][idx]["heartrate_precision"] = static_cast<double>(i.heartratePrecision);
-                response_body["data"][idx]["spo2_precision"] = static_cast<double>(i.spo2_precision);
-
-                idx++;
-            }
         }
 
         crow::response res;
