@@ -11,21 +11,21 @@ set(CMAKE_C_USE_RESPONSE_FILE_FOR_OBJECTS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(
-    OXIM-server
+    polih-server
     VERSION 0.1.0
-    DESCRIPTION "The server responsible for receiving, storing and sending OXIM-user related information."
+    DESCRIPTION "The server responsible for receiving, storing and sending polih-user related information."
     HOMEPAGE_URL "https://example.com/"
     LANGUAGES CXX
 )
 
 # ---- Declare executable ----
 
-add_executable(OXIM-server_exe source/main.cpp)
-add_executable(OXIM-server::exe ALIAS OXIM-server_exe)
+add_executable(polih-server_exe source/main.cpp)
+add_executable(polih-server::exe ALIAS polih-server_exe)
 
-set_property(TARGET OXIM-server_exe PROPERTY OUTPUT_NAME OXIM-server)
+set_property(TARGET polih-server_exe PROPERTY OUTPUT_NAME polih-server)
 
-target_compile_features(OXIM-server_exe PRIVATE cxx_std_17)
+target_compile_features(polih-server_exe PRIVATE cxx_std_17)
 
 # ---- Include libraries ----
 
@@ -43,7 +43,7 @@ CPMAddPackage("gh:rbock/sqlpp11#abc9e30b5e6493f9560f2a516c521e34a194ddfc")
 
 CPMAddPackage("gh:nlohmann/json#v3.12.0")
 
-target_link_libraries(OXIM-server_exe
+target_link_libraries(polih-server_exe
   PRIVATE
   sqlpp11::sqlpp11
   sqlpp11::mariadb
@@ -52,6 +52,6 @@ target_link_libraries(OXIM-server_exe
 )
 
 if(WIN32)
-  target_link_libraries(OXIM-server_exe PUBLIC wsock32)
-  target_link_libraries(OXIM-server_exe PUBLIC ws2_32)
+  target_link_libraries(polih-server_exe PUBLIC wsock32)
+  target_link_libraries(polih-server_exe PUBLIC ws2_32)
 endif()

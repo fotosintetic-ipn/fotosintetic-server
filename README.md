@@ -1,6 +1,6 @@
-# OXIM-server
+# polih-server
 
-This is the OXIM-server project.
+This is the polih-server project.
 
 # Building and installing
 
