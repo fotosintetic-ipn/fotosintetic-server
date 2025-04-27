@@ -29,23 +29,19 @@ target_compile_features(OXIM-server_exe PRIVATE cxx_std_17)
 
 # ---- Include libraries ----
 
+include(cmake/CPM.cmake)
+
 set(CROW_BUILD_EXAMPLES OFF)
 set(CROW_BUILD_TESTS OFF)
 
-FetchContent_Declare(Crow GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
-                          GIT_TAG edf12f699ec3bf6f751cf73cb97f32919e48ca6e)
-FetchContent_MakeAvailable(Crow)
+CPMAddPackage("gh:CrowCpp/Crow#v1.2.1.2")
 
 set(BUILD_MARIADB_CONNECTOR ON)
 set(BUILD_TESTING OFF)
 
-FetchContent_Declare(Sqlpp11 GIT_REPOSITORY https://github.com/rbock/sqlpp11.git
-                             GIT_TAG 6cc2067ef5fd91612f31509384e78d36c74c7657) 
-FetchContent_MakeAvailable(Sqlpp11)
+CPMAddPackage("gh:rbock/sqlpp11#abc9e30b5e6493f9560f2a516c521e34a194ddfc")
 
-FetchContent_Declare(json GIT_REPOSITORY https://github.com/nlohmann/json.git
-                          GIT_TAG 9cca280a4d0ccf0c08f47a99aa71d1b0e52f8d03)
-FetchContent_MakeAvailable(json)
+CPMAddPackage("gh:nlohmann/json#v3.12.0")
 
 target_link_libraries(OXIM-server_exe
   PRIVATE
