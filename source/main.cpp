@@ -11,10 +11,10 @@
 
 int main(){
     auto config = std::make_shared<sqlpp::mysql::connection_config>();
-    config -> database = "polih";
-    config -> user = "pez";
-    config -> password = "pez";
-    config -> host = "localhost";
+    config -> database = "";
+    config -> user = "";
+    config -> password = "";
+    config -> host = "";
     config -> debug = true;
     auto db = sqlpp::mysql::connection(config);
 
@@ -107,7 +107,7 @@ int main(){
                             .from(data)
                             .where(data.deviceId == id)
                             .limit(limit)
-                            .order_by(data.entryId.asc()));
+                            .order_by(data.entryId.desc()));
             int idx = 0;
 
             response_body["data"] = nlohmann::json::array();
