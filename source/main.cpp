@@ -25,7 +25,19 @@ int main(){
         auto body = nlohmann::json::parse(req.body);
         if(req.get_header_value("Authorization") == ""
         || !body.contains("ph")
-        || !body["ph"].is_array()){
+        || !body.contains("ambient_humidity")
+        || !body.contains("ambient_temperature")
+        || !body.contains("roll")
+        || !body.contains("pitch")
+        || !body.contains("moisture")
+        || !body.contains("wind_speed")
+        || !body["ph"].is_array()
+        || !body["ambient_humidity"].is_array()
+        || !body["ambient_temperature"].is_array()
+        || !body["roll"].is_array()
+        || !body["pitch"].is_array()
+        || !body["moisture"].is_array()
+        || !body["wind_speed"].is_array()){
             return crow::response(crow::status::BAD_REQUEST);
         }
 
@@ -36,7 +48,7 @@ int main(){
         std::string device_name = decoded_auth.substr(0, found);
         std::string password = decoded_auth.substr(found + 1);
         
-        auto dev = polih::Devices{};
+        auto dev = fotosintetic::Devices{};
         auto rows = db(select(all_of(dev)).from(dev).where(dev.deviceName == device_name and dev.password == password));
 
         if(rows.empty())
@@ -44,9 +56,15 @@ int main(){
 
         int32_t device_id = rows.front().id;
 
-        auto data = polih::Data{};
+        auto data = fotosintetic::Data{};
         db(insert_into(data).set(data.deviceId = device_id,
-                                 data.ph = body["ph"].dump()));
+                                 data.ph = body["ph"].dump(),
+                                 data.ambientHumidity = body["ambient_humidity"].dump(),
+                                 data.ambientTemperature = body["ambient_temperature"].dump(),
+                                 data.roll = body["roll"].dump(),
+                                 data.pitch = body["pitch"].dump(),
+                                 data.moisture = body["moisture"].dump(),
+                                 data.windSpeed = body["wind_speed"].dump()));
 
         return crow::response(crow::status::OK);
     });
@@ -60,7 +78,7 @@ int main(){
         std::string device_name = req.url_params.get("device_name");
         std::string password = req.url_params.get("password");
 
-        auto dev = polih::Devices{};
+        auto dev = fotosintetic::Devices{};
         auto rows = db(select(all_of(dev)).from(dev).where(dev.deviceName == device_name));
         
         if(!rows.empty())
@@ -84,7 +102,7 @@ int main(){
         std::string device_name = decoded_auth.substr(0, found);
         std::string password = decoded_auth.substr(found + 1);
         
-        auto dev = polih::Devices{};
+        auto dev = fotosintetic::Devices{};
         auto rows = db(select(all_of(dev)).from(dev).where(dev.deviceName == device_name and dev.password == password));
 
         if(rows.empty())
@@ -99,7 +117,7 @@ int main(){
             limit = std::stoi(req.url_params.get("limit"));
         limit = std::min(limit, (uint32_t)100);
 
-        auto data = polih::Data{};
+        auto data = fotosintetic::Data{};
         nlohmann::json response_body;
 
         try{
@@ -115,10 +133,22 @@ int main(){
             for(const auto& i: result){
                 response_body["data"][idx]["entry_id"] = static_cast<uint32_t>(i.entryId);
                 
-                auto array = nlohmann::json::parse(static_cast<std::string>(i.ph));
-                response_body["data"][idx]["ph"] = nlohmann::json::array();
-                for(int it = 0; it != 10; it++)
-                    response_body["data"][idx]["ph"][it] = array[it];
+                std::vector<std::pair<std::string, std::string>> fields = {
+                    {"ph", i.ph},
+                    {"ambient_humidity", i.ambientHumidity},
+                    {"ambient_temperature", i.ambientTemperature},
+                    {"roll", i.roll},
+                    {"pitch", i.pitch},
+                    {"moisture", i.moisture},
+                    {"wind_speed", i.windSpeed}
+                };
+                
+                for (const auto& [key, value_str] : fields) {
+                    auto array = nlohmann::json::parse(static_cast<std::string>(value_str));
+                    response_body["data"][idx][key] = nlohmann::json::array();
+                    for (int it = 0; it != 10; ++it)
+                        response_body["data"][idx][key][it] = array[it];
+                }
 
                 idx++;
             }
@@ -143,7 +173,7 @@ int main(){
         std::string device_name = req.url_params.get("device_name");
         std::string password = req.url_params.get("password");
 
-        auto dev = polih::Devices{};
+        auto dev = fotosintetic::Devices{};
         auto rows = db(select(all_of(dev)).from(dev).where(dev.deviceName == device_name and dev.password == password));
         
         if(!rows.empty())

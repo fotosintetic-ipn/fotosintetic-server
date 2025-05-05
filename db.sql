@@ -14,11 +14,17 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- Volcando estructura para tabla polih.data
+-- Volcando estructura para tabla fotosintetic.data
 CREATE TABLE IF NOT EXISTS `data` (
   `entry_id` int(11) NOT NULL AUTO_INCREMENT,
   `device_id` int(11) NOT NULL,
-  `ph` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `ph` longtext NOT NULL,
+  `ambient_humidity` longtext NOT NULL,
+  `ambient_temperature` longtext NOT NULL,
+  `roll` longtext NOT NULL,
+  `pitch` longtext NOT NULL,
+  `moisture` longtext NOT NULL,
+  `wind_speed` longtext NOT NULL,
   PRIMARY KEY (`entry_id`) USING BTREE,
   KEY `Índice 2` (`device_id`) USING BTREE,
   CONSTRAINT `FK_data_devices` FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION
@@ -26,7 +32,7 @@ CREATE TABLE IF NOT EXISTS `data` (
 
 -- La exportación de datos fue deseleccionada.
 
--- Volcando estructura para tabla polih.devices
+-- Volcando estructura para tabla fotosintetic.devices
 CREATE TABLE IF NOT EXISTS `devices` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `password` varchar(50) NOT NULL DEFAULT '',
